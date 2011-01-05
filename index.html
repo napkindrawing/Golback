@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="css/reset.css" type="text/css" />
+    <script src="js/jquery/jquery-1.4.4.min.js"></script>
+    <script src="js/underscore/underscore-min.js"></script>
+    <script src="js/backbone/backbone-min.js"></script>
+    <style type="text/css">
+      input {
+          height: 12px;
+          width: 36px;
+          font-size: 10px;
+      }
+      td {
+        height: 10px;
+        width: 10px;
+        border: 1px solid #aaa;
+      }
+    </style>
+</head>
+<body>
+    <div id="game">
+        <div id="controls">
+            <button id="start">Start</button>
+            <button id="step">Step</button>
+            <button id="pause">Pause</button>
+            <button id="reset">Reset</button>
+            Dimensions: <input name="width" value="50" /> x <input name="height" value="50" />
+        </div>
+        <div id="board">
+        </div>
+    </div>
+    <script>
+        Board = Backbone.Model.extend({
+            initialize: function() {
+                if(!this.get('height')) this.set({ height: 50 });
+                if(!this.get('width')) this.set({ width: 50 });
+
+                var tiles = [];
+                var board = this;
+                _(this.get('height')).times(function(h) {
+                    tiles[h] = [];
+                    _(board.get('width')).times(function(w) {
+                        tiles[h][w] = { state: 'off' };
+                    });
+                });
+
+                this.set({
+                    tiles: tiles
+                });
+                console.log("tiles: ",tiles);
+            },
+            // Flip the status of the 
+            edit: function(x,y) {
+            }
+        });
+        Tile = Backbone.Model.extend({
+            initialize: function() {
+            }
+        });
+        Game = Backbone.Controller.extend({
+            initialize: function() {
+                this.board = new Board();
+                this.gameView = new GameView({ model: this.board });
+            }
+        });
+        GameView = Backbone.View.extend({
+            el: '#game',
+            events: {
+                'click #controls #start': 'start'
+            },
+            initialize: function() {
+                this.boardView = new BoardView({ model: this.model });
+                this.boardView.render();
+            },
+            start: function() {
+                console.log("Starting!");
+            }
+        });
+        BoardView = Backbone.View.extend({ 
+            el: '#board',
+            events: {
+                'click td': 'editTile'
+            },
+            initialize: function() {
+                _.bindAll(this, 'editTile');
+            },
+            editTile: function(e) {
+                console.log("BoardView.editTile: ",this,e);
+                var el = $(e.currentTarget);
+                var h = el.attr('data-h');
+                var w = el.attr('data-w');
+                this.model.get('tiles')[h][w] = this.clickOnTile( this.model.get('tiles')[h][w] );
+                this.render();
+            },
+            // TODO: Move to Model
+            clickOnTile: function(tile) {
+                console.log("click on tile: ",tile);
+                switch(tile.state) {
+                    case 'on':
+                        tile.state = 'off';
+                        break;
+                    case 'off':
+                        tile.state = 'on';
+                        break;
+                }
+                return tile;
+            },
+            renderTileContents: function(tile) {
+                switch(tile.state) {
+                    case 'on':
+                        return '<div style="height: 100%; width: 100%; background: #444;"> </div>';
+                    case 'off':
+                        return '<div style="height: 100%; width: 100%; background: #fff;"> </div>';
+                }
+                return '?';
+            },
+            render: function() {
+                var html = '<table>';
+                for(var h=0; h<this.model.get('height'); h++) {
+                    html += '<tr>';
+                    for(var w=0; w<this.model.get('width'); w++) {
+                        html += '<td data-h="'+h+'" data-w="'+w+'">';
+                        html += this.renderTileContents( this.model.get('tiles')[h][w] );
+                        html += '</td>';
+                    }
+                    html += '</tr>';
+                }
+                html += '</table>';
+                $(this.el).html( html );
+            }
+        });
+
+        var game = new Game();
+    </script>
+</body>
+</html>
